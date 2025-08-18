@@ -1,11 +1,7 @@
+// src/main/java/com/example/Leave_management_system/controller/ApiController.java
 package com.example.Leave_management_system.controller;
 
-
-import com.example.Leave_management_system.dto.ApplyLeaveRequest;
-import com.example.Leave_management_system.dto.BalanceResponse;
-
-import com.example.Leave_management_system.dto.CreateEmployeeRequest;
-import com.example.Leave_management_system.dto.DecisionRequest;
+import com.example.Leave_management_system.dto.*;
 import com.example.Leave_management_system.model.Employee;
 import com.example.Leave_management_system.service.EmployeeService;
 import com.example.Leave_management_system.service.LeaveService;
@@ -55,10 +51,34 @@ public class ApiController {
         return ResponseEntity.ok(leaveService.balance(id));
     }
 
-    // 6) Get leave by ID
+    // 6) Get leave by ID (DTO)
     @GetMapping("/leaves/{id}")
-    public ResponseEntity<?> getLeave(@PathVariable Long id) {
-        var leave = leaveService.getById(id);
-        return ResponseEntity.ok(leave);
+    public ResponseEntity<LeaveDto> getLeave(@PathVariable Long id) {
+        return ResponseEntity.ok(leaveService.getDtoById(id));
+    }
+
+    // 7) List leaves (HR view or employee view via filters)
+    //    /api/leaves?status=PENDING&page=0&size=20
+    //    /api/leaves?employeeId=1
+    //    /api/leaves?employeeId=1&status=APPROVED
+    @GetMapping("/leaves")
+    public ResponseEntity<PageResponse<LeaveDto>> listLeaves(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long employeeId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(leaveService.listLeaves(status, employeeId, page, size));
+    }
+
+    // 8) Employee-specific history shortcut
+    @GetMapping("/employees/{id}/leaves")
+    public ResponseEntity<PageResponse<LeaveDto>> listEmployeeLeaves(
+            @PathVariable Long id,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(leaveService.listLeaves(status, id, page, size));
     }
 }

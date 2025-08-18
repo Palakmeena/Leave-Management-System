@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
+
+import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name = "leave_requests",
@@ -52,11 +54,11 @@ public class LeaveRequest {
     private String decisionNote;
 
     @Builder.Default
-    private OffsetDateTime createdAt = OffsetDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Builder.Default
-    private OffsetDateTime updatedAt = OffsetDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     @PreUpdate
-    void touch() { this.updatedAt = OffsetDateTime.now(); }
+    void touch() { this.updatedAt = LocalDateTime.now(); }
 }

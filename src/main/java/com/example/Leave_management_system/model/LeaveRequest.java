@@ -59,6 +59,9 @@ public class LeaveRequest {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @Version
+    private Integer version;
+
     @PreUpdate
     void touch() { this.updatedAt = LocalDateTime.now(); }
 }

@@ -124,7 +124,7 @@ public class LeaveService {
 
         var lr = LeaveRequest.builder()
                 .employee(emp)
-                .type(LeaveType.ANNUAL)
+                .type(req.getType() != null ? req.getType() : LeaveType.ANNUAL)
                 .status(LeaveStatus.PENDING)
                 .startDate(start)
                 .endDate(end)
@@ -137,43 +137,56 @@ public class LeaveService {
 
     @Transactional
     public void approve(Long leaveId, DecisionRequest req){
-        var lr = leaveRepo.findById(leaveId)
-                .orElseThrow(() -> new NotFoundException("leave not found: " + leaveId));
-        if (lr.getStatus() != LeaveStatus.PENDING)
-            throw new ConflictException("only PENDING can be approved");
+        try {
+            var lr = leaveRepo.findById(leaveId)
+                    .orElseThrow(() -> new NotFoundException("leave not found: " + leaveId));
+            if (lr.getStatus() != LeaveStatus.PENDING)
+                throw new ConflictException("only PENDING can be approved");
 
-        var approver = employeeService.getOrThrow(req.getApproverId());
-        if (!approver.isHr())
-            throw new ForbiddenException("approver must be HR");
-        if (approver.getId().equals(lr.getEmployee().getId()))
-            throw new ForbiddenException("self-approval not allowed");
+            var approver = employeeService.getOrThrow(req.getApproverId());
+            if (!approver.isHr())
+                throw new ForbiddenException("approver must be HR");
+            if (approver.getId().equals(lr.getEmployee().getId()))
+                throw new ForbiddenException("self-approval not allowed");
 
-        var yStart = startOfYear(lr.getStartDate());
-        var yEnd   = endOfYear(lr.getStartDate());
-        int approved = leaveRepo.sumApprovedDaysBetween(lr.getEmployee().getId(), yStart, yEnd);
-        int remaining = lr.getEmployee().getAnnualAllocationDays() - approved;
-        if (lr.getDays() > remaining)
-            throw new ConflictException("insufficient balance at approval time");
+            // balance check
+            var yStart = startOfYear(lr.getStartDate());
+            var yEnd   = endOfYear(lr.getStartDate());
+            int approved = leaveRepo.sumApprovedDaysBetween(lr.getEmployee().getId(), yStart, yEnd);
+            int remaining = lr.getEmployee().getAnnualAllocationDays() - approved;
+            if (lr.getDays() > remaining)
+                throw new ConflictException("insufficient balance at approval time");
 
-        lr.setStatus(LeaveStatus.APPROVED);
-        lr.setApprover(approver);
-        lr.setDecisionNote(req.getNote());
+            lr.setStatus(LeaveStatus.APPROVED);
+            lr.setApprover(approver);
+            lr.setDecisionNote(req.getNote());
+
+            leaveRepo.save(lr); // version checked here automatically
+        } catch (org.springframework.dao.OptimisticLockingFailureException ex) {
+            throw new ConflictException("leave was modified by another HR. Please refresh and try again.");
+        }
     }
 
     @Transactional
     public void reject(Long leaveId, DecisionRequest req){
-        var lr = leaveRepo.findById(leaveId)
-                .orElseThrow(() -> new NotFoundException("leave not found: " + leaveId));
-        if (lr.getStatus() != LeaveStatus.PENDING)
-            throw new ConflictException("only PENDING can be rejected");
+        try {
+            var lr = leaveRepo.findById(leaveId)
+                    .orElseThrow(() -> new NotFoundException("leave not found: " + leaveId));
+            if (lr.getStatus() != LeaveStatus.PENDING)
+                throw new ConflictException("only PENDING can be rejected");
 
-        var approver = employeeService.getOrThrow(req.getApproverId());
-        if (!approver.isHr())
-            throw new ForbiddenException("approver must be HR");
+            var approver = employeeService.getOrThrow(req.getApproverId());
+            if (!approver.isHr())
+                throw new ForbiddenException("approver must be HR");
 
-        lr.setStatus(LeaveStatus.REJECTED);
-        lr.setApprover(approver);
-        lr.setDecisionNote(req.getNote());
+            lr.setStatus(LeaveStatus.REJECTED);
+            lr.setApprover(approver);
+            lr.setDecisionNote(req.getNote());
+
+            leaveRepo.save(lr); // optimistic locking version checked here
+        } catch (org.springframework.dao.OptimisticLockingFailureException ex) {
+            throw new ConflictException("leave was modified by another HR. Please refresh and try again.");
+        }
     }
 
     @Transactional(readOnly = true)

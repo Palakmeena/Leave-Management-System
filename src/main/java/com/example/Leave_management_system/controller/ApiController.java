@@ -25,7 +25,7 @@ public class ApiController {
     }
 
     // 2) Apply for leave
-    @PostMapping("/leaves")
+    @PostMapping("/leaves/apply")
     public ResponseEntity<?> apply(@Valid @RequestBody ApplyLeaveRequest req){
         Long id = leaveService.apply(req);
         return ResponseEntity.ok(java.util.Map.of("leaveId", id, "status", "PENDING"));

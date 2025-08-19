@@ -61,7 +61,7 @@ public class ApiController {
     //    /api/leaves?status=PENDING&page=0&size=20
     //    /api/leaves?employeeId=1
     //    /api/leaves?employeeId=1&status=APPROVED
-    @GetMapping("/leaves")
+    @GetMapping("/leaves/all")
     public ResponseEntity<PageResponse<LeaveDto>> listLeaves(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long employeeId,

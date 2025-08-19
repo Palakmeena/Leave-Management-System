@@ -8,6 +8,7 @@ import com.example.Leave_management_system.service.LeaveService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,12 +21,14 @@ public class ApiController {
 
     // 1) Add employee
     @PostMapping("/employees")
+    @PreAuthorize("hasAuthority('HR')")
     public ResponseEntity<Employee> createEmployee(@Valid @RequestBody CreateEmployeeRequest req){
         return ResponseEntity.ok(employeeService.create(req));
     }
 
     // 2) Apply for leave
     @PostMapping("/leaves/apply")
+    @PreAuthorize("hasAuthority('EMPLOYEE')")
     public ResponseEntity<?> apply(@Valid @RequestBody ApplyLeaveRequest req){
         Long id = leaveService.apply(req);
         return ResponseEntity.ok(java.util.Map.of("leaveId", id, "status", "PENDING"));
@@ -33,6 +36,7 @@ public class ApiController {
 
     // 3) Approve leave
     @PutMapping("/leaves/{id}/approve")
+    @PreAuthorize("hasAuthority('HR')")
     public ResponseEntity<?> approve(@PathVariable Long id, @Valid @RequestBody DecisionRequest req){
         leaveService.approve(id, req);
         return ResponseEntity.ok(java.util.Map.of("leaveId", id, "status", "APPROVED"));
@@ -40,19 +44,22 @@ public class ApiController {
 
     // 4) Reject leave
     @PutMapping("/leaves/{id}/reject")
+    @PreAuthorize("hasAuthority('HR')")
     public ResponseEntity<?> reject(@PathVariable Long id, @Valid @RequestBody DecisionRequest req){
         leaveService.reject(id, req);
         return ResponseEntity.ok(java.util.Map.of("leaveId", id, "status", "REJECTED"));
     }
 
-    // 5) Fetch leave balance
+    // 5) Fetch leave balance for employees
     @GetMapping("/employees/{id}/balance")
+    @PreAuthorize("hasAuthority('EMPLOYEE')")
     public ResponseEntity<BalanceResponse> balance(@PathVariable Long id){
         return ResponseEntity.ok(leaveService.balance(id));
     }
 
     // 6) Get leave by ID (DTO)
     @GetMapping("/leaves/{id}")
+    @PreAuthorize("hasAnyAuthority('EMPLOYEE','HR')")
     public ResponseEntity<LeaveDto> getLeave(@PathVariable Long id) {
         return ResponseEntity.ok(leaveService.getDtoById(id));
     }
@@ -62,6 +69,7 @@ public class ApiController {
     //    /api/leaves?employeeId=1
     //    /api/leaves?employeeId=1&status=APPROVED
     @GetMapping("/leaves/all")
+    @PreAuthorize("hasAuthority('HR')")
     public ResponseEntity<PageResponse<LeaveDto>> listLeaves(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long employeeId,
@@ -73,6 +81,7 @@ public class ApiController {
 
     // 8) Employee-specific history shortcut
     @GetMapping("/employees/{id}/leaves")
+    @PreAuthorize("hasAuthority('EMPLOYEE')")
     public ResponseEntity<PageResponse<LeaveDto>> listEmployeeLeaves(
             @PathVariable Long id,
             @RequestParam(required = false) String status,

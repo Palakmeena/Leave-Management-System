@@ -19,10 +19,10 @@ public class EmployeeDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Employee emp = employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-        return new org.springframework.security.core.userdetails.User(
-                emp.getEmail(),
-                "password-placeholder", // future mein hashed password add karna
-                java.util.List.of(() -> emp.isHr() ? "HR" : "EMPLOYEE")
-        );
+    return new org.springframework.security.core.userdetails.User(
+        emp.getEmail(),
+        "password-placeholder", // future mein hashed password add karna
+        java.util.List.of(() -> emp.isHr() ? "HR" : "EMPLOYEE")
+    );
     }
 }

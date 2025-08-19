@@ -47,6 +47,6 @@ public class AuthController {
         // ✅ Pass Employee (UserDetails) instead of String email
         String token = jwtUtil.generateToken(emp);
 
-        return ResponseEntity.ok(new AuthResponse(token, emp.isHr() ? "HR" : "EMPLOYEE"));
+    return ResponseEntity.ok(new AuthResponse(token, emp.isHr() ? "HR" : "EMPLOYEE"));
     }
 }
